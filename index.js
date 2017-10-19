@@ -1,6 +1,3 @@
-var browserify = require('browserify');
-var watchify = require('watchify');
-var through = require('through');
 var archiver = require('archiver');
 var fs = require('fs-extra');
 var path = require('path');
@@ -9,9 +6,21 @@ var cp = require('child_process');
 
 var exports = module.exports;
 
+var line1 = new Buffer('Manifest-Version: 1.0\n');
+var line2 = new Buffer('Created-By: 1.8.0_101 (Oracle Corporation)\n');
+var line3 = new Buffer('\n');
+var buf = Buffer.concat([line1,line2,line3]);
+fs.writeFile('/tmp/MANIFEST.MF', buf, function(err) {
+    if(err) {
+        return console.log(err);
+    }
+    console.log("The manifest file has been saved!");
+});
+
 exports.createPackage = function(outputFile) {
   var output = fs.createWriteStream(outputFile);
   var archive = archiver('zip');
+  var rootdir = path.basename(outputFile, '.zip')
   output.on('close', function() {
     console.log(archive.pointer() + ' total bytes');
     console.log('Package has been created at: ' + outputFile);
@@ -36,12 +45,13 @@ exports.createPackage = function(outputFile) {
   archive.pipe(output);
 
   archive
-    .append(fs.createReadStream(process.cwd() + '/build/app.js'), { name: 'app.js' })
-    .append(fs.createReadStream(process.cwd() + '/index.html')
-    .pipe(replaceStream('node_modules\/@boundlessgeo\/sdk\/dist\/css\/components.css', 'css\/components.min.css'))
+    .append(fs.createReadStream('/tmp/MANIFEST.MF'), { name: rootdir + '/META-INF/MANIFEST.MF' })
+    .append(fs.createReadStream(process.cwd() + '/dist/app.min.js'), { name: rootdir + '/app.min.js' })
+    .append(fs.createReadStream(process.cwd() + '/dist/index.html')
+    .pipe(replaceStream('node_modules\/@boundlessgeo\/sdk\/dist\/css\/components.css', rootdir + '\/css\/components.min.css'))
     .pipe(replaceStream('<script src="\/loader.js"><\/script>', ''))
-    .pipe(replaceStream('\/build\/app-debug.js', 'app.js')), { name: 'index.html' })
-    .append(fs.createReadStream(process.cwd() + '/app.css'), { name: 'app.css' });
+    .pipe(replaceStream('\/dist\/app-debug.js', 'app.min.js')), { name: rootdir + '/index.html' })
+    .append(fs.createReadStream(process.cwd() + '/dist/css/app.min.css'), { name: rootdir + '/css/app.min.css' });
   for (i = 0, ii = directories.length; i < ii; ++i) {
     archive.directory(directories[i], directories[i].split('/').pop());
   }
@@ -49,58 +59,10 @@ exports.createPackage = function(outputFile) {
 };
 
 exports.createBuildDir = function() {
-  var dir = 'build';
+  var dir = 'dist';
   fs.ensureDir(dir, function (err) {
     if (err) {
       console.log(err);
-    }
-  });
-};
-
-exports.startServer = function(opt_entryPoint, opt_port) {
-  function globalOl(file) {
-    var data = '';
-    function write(buf) { data += buf; }
-    function end() {
-      this.queue(data.replace(/require\(["']openlayers['"]\)/g, 'window.ol'));
-      this.queue(null);
-    }
-    return through(write, end);
-  }
-
-  var b = browserify({
-    entries: [opt_entryPoint ? opt_entryPoint : './app.jsx'],
-    extensions: [".jsx"],
-    debug: true,
-    plugin: [watchify],
-    cache: {},
-    packageCache: {}
-  }).transform(globalOl, {global: true});
-
-  var outFile = './build/app-debug.js';
-  var childProcess;
-
-  b.on('update', function bundle(onError) {
-    var stream = b.bundle();
-    if (onError) {
-      stream.on('error', function(err) {
-        console.log(err.message);
-        childProcess.kill('SIGINT');
-        process.exit(1);
-      });
-    }
-    stream.pipe(fs.createWriteStream(outFile));
-  });
-
-  b.bundle(function(err, buf) {
-    if (err) {
-      console.error(err.message);
-      process.exit(1);
-    } else {
-      fs.writeFile(outFile, buf, 'utf-8');
-      var args = opt_port ? ['--port', opt_port] : [];
-      childProcess = cp.fork(path.join(path.dirname(require.resolve('openlayers')),
-          '../tasks/serve-lib.js'), args);
     }
   });
 };

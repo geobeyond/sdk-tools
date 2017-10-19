@@ -1,16 +1,16 @@
 {
-  "name": "@boundlessgeo/sdk-tools",
-  "version": "1.0.0",
-  "description": "Tools for the Boundless Web SDK",
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/boundlessgeo/sdk-tools.git"
-  },
-  "author": "Boundless Spatial, Inc.",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/boundlessgeo/sdk-tools/issues"
-  },
-  "homepage": "https://github.com/boundlessgeo/sdk-tools#readme"
+	"name": "sdk-tools",
+	"version": "1.0.9",
+	"description": "Tools for the MapReacter",
+	"homepage": "https://github.com/geobeyond/sdk-tools#readme",
+	"bugs": {
+		"url": "https://github.com/geobeyond/sdk-tools/issues"
+	},
+	"license": "Apache-2.0",
+	"author": "Geobeyond Srl",
+	"main": "index.js",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/geobeyond/sdk-tools.git"
+	}
 }
